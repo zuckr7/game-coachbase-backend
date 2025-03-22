@@ -4,6 +4,7 @@ import uvicorn
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 import uuid
+from typing import Optional
 
 app = FastAPI()
 
@@ -14,8 +15,8 @@ class UserCreate(BaseModel):
     password: str
 
 class UserProgressUpdate(BaseModel):
-    passedLevel: int
-    items: list[dict]
+    passedLevel: Optional[int] = None
+    items: Optional[list[dict]] = None  # Optional для patch 
 
 class UserResponse(BaseModel):
     user_id: str
@@ -101,23 +102,48 @@ def delete_user(user_id: str):
     return {"message": f"User with ID {user_id} deleted successfully"}
 
 #(UPDATE PROGRESS)
-@app.put("/users/{user_id}/progress")
+# @app.put("/users/{user_id}/progress")
+# def put_progress(user_id:str, progress_update: UserProgressUpdate):
+#     user = db.get_document(user_id)
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+    
+#     user["version"] += 1
+#     user["progress"] = progress_update.model_dump()
+
+#     if not db.create_document(user_id, user):  # Из-за upsert при создании, перезапишет там же с новыми данными
+#         raise HTTPException(status_code=500, detail="Failed to update progress")
+
+#     return {
+#         "message": "Progress updated",
+#         "user_id": user_id,
+#         "username": user["username"],
+#         "version": user["version"] 
+#     }
+
+@app.patch("/users/{user_id}/progress")
 def update_progress(user_id:str, progress_update: UserProgressUpdate):
     user = db.get_document(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     user["version"] += 1
-    user["progress"] = progress_update.model_dump()
 
-    if not db.create_document(user_id, user):  # Из-за upsert при создании, перезапишет там же с новыми данными
+    if progress_update.passedLevel is not None:
+        user["progress"]["passedLevel"] = progress_update.passedLevel
+
+    if progress_update.items is not None:
+        user["progress"]["items"] = progress_update.items
+
+    if not db.create_document(user_id, user) is not None:
         raise HTTPException(status_code=500, detail="Failed to update progress")
-
+    
     return {
         "message": "Progress updated",
         "user_id": user_id,
         "username": user["username"],
-        "version": user["version"] 
+        "version": user["version"],
+        "progress": user["progress"] 
     }
     
 @app.get("/users/{user_id}/progress", response_model=UserProgressUpdate)
