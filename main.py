@@ -64,7 +64,7 @@ def create_user(user: UserCreate):
         "items": [
             {"name": "shield", "amount": 1},
             {"name": "booster", "amount": 1}
-        ]  # Пустой список предметов
+        ]  # Первый список предметов
     }
 
     # Сохранение в Couchbase
@@ -133,7 +133,8 @@ def update_progress(user_id:str, progress_update: UserProgressUpdate):
         user["progress"]["passedLevel"] = progress_update.passedLevel
 
     if progress_update.items is not None:
-        user["progress"]["items"] = progress_update.items
+        user["progress"]["items"] = progress_update.items # логику
+        #diff = set(old_items) - set(new_items)
 
     if not db.create_document(user_id, user) is not None:
         raise HTTPException(status_code=500, detail="Failed to update progress")
