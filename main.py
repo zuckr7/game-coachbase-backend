@@ -1,14 +1,34 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
 from db import db
 import uvicorn
 from pydantic import BaseModel, EmailStr
-from datetime import datetime
+from datetime import datetime, timedelta, time
 import uuid
 from typing import Optional
+from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from jose import jwt, JWTError
+from dotenv import load_dotenv
+import os
+import bcrypt
 
 app = FastAPI()
 
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+
+bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/auth/token")
+
 # Модели данных
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
@@ -28,14 +48,41 @@ class UserResponse(BaseModel):
 def generate_user_id() -> str:
     while True:
         user_id = str(uuid.uuid4())
-        if not db.get_document(user_id):
+        if not db._get_document(user_id):
             return user_id
 
 def hash_password(password: str) -> str:
-    return password
+    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    return hashed.decode("utf-8")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return True
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+
+def create_access_token(user_id:str):
+    payload = {
+        "sub": user_id,
+        "exp":datetime.now() + timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
+    }
+    return jwt.encode(payload,SECRET_KEY,algorithm=ALGORITHM)
+
+async def get_current_user(token: str = Depends(oauth2_bearer)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM],options={"require_exp": True})
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = db.get_document(user_id)
+    if user is None:
+        raise credentials_exception
+    return user
 
 # ------
 
@@ -48,11 +95,9 @@ def root():
 def create_user(user: UserCreate):
     user_id = generate_user_id()
 
-    # Проверка, существует ли пользователь
-    # existing_user = db.get_document(f"user_{user.username}")
-    # if existing_user:
-    #     raise HTTPException(status_code=400, detail="Username already exists")
-    # Do we need unique username (common sense tells me yes :c)
+    existing_user = db.get_user_by_username(user.username)
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
 
     user_data = user.model_dump()
     user_data["user_id"] = user_id
@@ -82,7 +127,11 @@ def create_user(user: UserCreate):
 
 # (GET)
 @app.get("/users/{user_id}", response_model=UserResponse)
-def get_user(user_id: str):
+async def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
+
+    if user_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access forbidden")
+    
     user = db.get_document(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -96,33 +145,19 @@ def get_user(user_id: str):
 
 # (DELETE)
 @app.delete("/users/{user_id}")
-def delete_user(user_id: str):
+async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    if user_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access forbidden")
+
     if not db.delete_document(user_id):
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": f"User with ID {user_id} deleted successfully"}
 
-#(UPDATE PROGRESS)
-# @app.put("/users/{user_id}/progress")
-# def put_progress(user_id:str, progress_update: UserProgressUpdate):
-#     user = db.get_document(user_id)
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found")
-    
-#     user["version"] += 1
-#     user["progress"] = progress_update.model_dump()
-
-#     if not db.create_document(user_id, user):  # Из-за upsert при создании, перезапишет там же с новыми данными
-#         raise HTTPException(status_code=500, detail="Failed to update progress")
-
-#     return {
-#         "message": "Progress updated",
-#         "user_id": user_id,
-#         "username": user["username"],
-#         "version": user["version"] 
-#     }
-
 @app.patch("/users/{user_id}/progress")
-def update_progress(user_id:str, progress_update: UserProgressUpdate):
+async def update_progress(user_id:str, progress_update: UserProgressUpdate, current_user: dict = Depends(get_current_user)):
+    if user_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access forbidden")
+    
     user = db.get_document(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -136,7 +171,7 @@ def update_progress(user_id:str, progress_update: UserProgressUpdate):
         user["progress"]["items"] = progress_update.items # логику
         #diff = set(old_items) - set(new_items)
 
-    if not db.create_document(user_id, user) is not None:
+    if not db.create_document(user_id, user):
         raise HTTPException(status_code=500, detail="Failed to update progress")
     
     return {
@@ -148,12 +183,30 @@ def update_progress(user_id:str, progress_update: UserProgressUpdate):
     }
     
 @app.get("/users/{user_id}/progress", response_model=UserProgressUpdate)
-def get_progress(user_id: str):
+async def get_progress(user_id: str, current_user: dict = Depends(get_current_user)):
+    if user_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access forbidden")
+    
     user = db.get_document(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     return user["progress"]
+
+@app.post("/auth/login")
+async def login (form_data: OAuth2PasswordRequestForm=Depends()):
+    user = db.get_user_by_username(form_data.username)
+
+    if not user or not verify_password(form_data.password, user["password_hash"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password"
+        )
+    
+    return {
+        "access_token": create_access_token(user["user_id"]),
+        "token_type": "bearer"
+    }
 
 # Запуск сервера
 if __name__ == "__main__":
