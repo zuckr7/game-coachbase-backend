@@ -100,6 +100,7 @@ def create_user(user: UserCreate):
         raise HTTPException(status_code=400, detail="Username already exists")
 
     user_data = user.model_dump()
+    user_data.pop("password", None)
     user_data["user_id"] = user_id
     user_data["password_hash"] = hash_password(user.password)
     user_data["created_at"] = datetime.now().isoformat()
