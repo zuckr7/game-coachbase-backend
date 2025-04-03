@@ -168,8 +168,24 @@ async def update_progress(user_id:str, progress_update: UserProgressUpdate, curr
         user["progress"]["passedLevel"] = progress_update.passedLevel
 
     if progress_update.items is not None:
-        user["progress"]["items"] = progress_update.items # логику
-        #diff = set(old_items) - set(new_items)
+        # Получаем текущие предметы как словарь
+        current_items = {
+            item["name"]: item.get("amount", item.get("quantity", 0))  # Проверяем оба ключа
+            for item in user["progress"].get("items", [])
+        }
+        
+        # Проходим по предметам из запроса
+        for new_item in progress_update.items:
+            name = new_item.get("name")
+            amount = new_item.get("amount", 0)
+            if name in current_items:
+                current_items[name] += amount
+            else:
+                current_items[name] = amount
+        
+        updated_items = [{"name": name, "amount": amt} for name, amt in current_items.items() if amt != 0]
+        
+        user["progress"]["items"] = updated_items
 
     if not db.create_document(user_id, user):
         raise HTTPException(status_code=500, detail="Failed to update progress")
