@@ -41,11 +41,11 @@ class CouchbaseDB:
         indexes = [
             {
                 "name": "idx_username",
-                "query": "CREATE INDEX `idx_username` ON `players_db`(`username`)"
+                "query": f"CREATE INDEX `idx_username` ON `{self.bucket.name}`(`username`)"
             },
             {
                 "name": "idx_vk_id",
-                "query": "CREATE INDEX `idx_vk_id` ON `players_db`(`vk_id`)"
+                "query": f"CREATE INDEX `idx_vk_id` ON `{self.bucket.name}`(`vk_id`)"
             }
         ]
 

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models.schemas import UserCreate, UserResponse
-from services.user import prepare_new_user, create_user_in_db, get_user_by_id, delete_user
+from services.user import prepare_new_user, create_user_in_db, get_user_by_id, delete_user, get_user_by_username
 from security import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/", response_model=UserResponse)
 def create_user(user: UserCreate):
-    existing = get_user_by_id(user.username)  # или используйте отдельную функцию проверки
+    existing = get_user_by_username(user.username)
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
     new_user = prepare_new_user(user.model_dump())
