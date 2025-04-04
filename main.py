@@ -11,6 +11,7 @@ from jose import jwt, JWTError
 from dotenv import load_dotenv
 import os
 import bcrypt
+import requests
 
 app = FastAPI()
 
@@ -224,6 +225,87 @@ async def login (form_data: OAuth2PasswordRequestForm=Depends()):
         "access_token": create_access_token(user["user_id"]),
         "token_type": "bearer"
     }
+
+# Эндпоинт для VK. клиент передает параметр vk_code
+@app.post("/auth/vk")
+async def vk_auth(vk_code: str):
+    vk_client_id = os.getenv("VK_CLIENT_ID")
+    vk_client_secret = os.getenv("VK_CLIENT_SECRET")
+    vk_redirect_uri = os.getenv("VK_REDIRECT_URI")
+
+    token_url = "https://oauth.vk.com/access_token"
+    params = {
+        "client_id": vk_client_id,
+        "client_secret": vk_client_secret,
+        "redirect_uri": vk_redirect_uri,
+        "code": vk_code
+    }
+    token_response = requests.get(token_url, params=params)
+    if token_response.status_code != 200:
+        raise HTTPException(status_code=400, detail="VK authentication failed")
+    token_data = token_response.json()
+
+    vk_access_token = token_data.get("access_token")
+    vk_user_id = token_data.get("user_id")
+    if not vk_access_token or not vk_user_id:
+        raise HTTPException(status_code=400, detail="Invalid VK response")
+    
+    # Получаем данные пользователя из VK
+    user_info_url = "https://api.vk.com/method/users.get"
+    params = {
+        "user_ids": vk_user_id,
+        "access_token": vk_access_token,
+        "v": "5.131",
+        "fields": "photo_100,domain"
+    }
+
+    user_response = requests.get(user_info_url, params=params)
+
+    if user_response.status_code != 200:
+        raise HTTPException(status_code=400, detail="VK user info retrieval failed")
+    
+    user_info = user_response.json()
+    if "response" not in user_info or not user_info["response"]:
+        raise HTTPException(status_code=400, detail="VK user info not found")
+    
+    vk_user = user_info["response"][0]
+    # Имя пользователя на основе VK ID
+    username = f"vk_{vk_user.get('id')}"
+    # VK не всегда возвращает email
+    email = f"{username}@vk.com"
+    existing_user = db.get_user_by_username(username)
+
+    if not existing_user:
+        # Если пользователя нет, создаём его без пароля
+        user_id = generate_user_id()
+        new_user = {
+            "user_id": user_id,
+            "username": username,
+            "email": email,
+            "created_at": datetime.now().isoformat(),
+            "version": 1,
+            "progress": {
+                "passedLevel": 0,
+                "items": [
+                    {"name": "shield", "amount": 1},
+                    {"name": "booster", "amount": 1}
+                ]
+            },
+            "vk_id": vk_user.get("id")
+        }
+        if not db.create_document(user_id, new_user):
+            raise HTTPException(status_code=500, detail="Failed to create user")
+        user_record = new_user
+    else:
+        user_record = existing_user
+
+    jwt_token = create_access_token(user_record["user_id"])
+    return {
+        "access_token": jwt_token,
+        "token_type": "bearer"
+    }
+
+
 
 # Запуск сервера
 if __name__ == "__main__":
