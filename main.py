@@ -273,7 +273,7 @@ async def vk_auth(vk_code: str):
     username = f"vk_{vk_user.get('id')}"
     # VK не всегда возвращает email
     email = f"{username}@vk.com"
-    existing_user = db.get_user_by_username(username)
+    existing_user = db.get_user_by_vk_id(str(vk_user.get("id")))
 
     if not existing_user:
         # Если пользователя нет, создаём его без пароля

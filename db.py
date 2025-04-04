@@ -48,6 +48,10 @@ class CouchbaseDB:
             {
                 "name": "idx_username",
                 "query": "CREATE INDEX `idx_username` ON `players_db`(`username`)"
+            },
+            {
+                "name": "idx_vk_id",
+                "query": "CREATE INDEX `idx_vk_id` ON `players_db`(`vk_id`)"
             }
         ]
 
@@ -125,7 +129,27 @@ class CouchbaseDB:
             }
             
         except CouchbaseException as e:
-            print(f"Ошибка поиска пользователя: {e}")
+            print(f"Ошибка поиска пользователя по username: {e}")
+            return None
+    
+    def get_user_by_vk_id(self, vk_id: str) -> Optional[dict]:
+        query = f"""
+        SELECT META().id, * FROM `{self.bucket.name}` 
+        WHERE vk_id = $vk_id 
+        LIMIT 1
+        """
+        try:
+            result = self.cluster.query(query, vk_id=vk_id)
+            rows = list(result.rows())
+            if not rows:
+                return None
+            row = rows[0]
+            return {
+                "user_id": row['id'],
+                **row[self.bucket.name]
+            }
+        except CouchbaseException as e:
+            print(f"Ошибка поиска пользователя по vk_id: {e}")
             return None
 
 # Подключение к базе данных
