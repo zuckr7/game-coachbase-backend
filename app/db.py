@@ -1,17 +1,11 @@
 import os
 from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions, ClusterTimeoutOptions
+from couchbase.options import ClusterOptions
 from couchbase.auth import PasswordAuthenticator
 from couchbase.exceptions import CouchbaseException, DocumentNotFoundException
-from dotenv import load_dotenv
 from typing import Optional
+from config import DB_HOST, USERNAME, PASSWORD, BUCKET_NAME
 
-load_dotenv()
-
-DB_HOST = os.getenv("DB_HOST")
-USERNAME = os.getenv("USERNAME")
-PASSWORD = os.getenv("PASSWORD")
-BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 if not all([DB_HOST, USERNAME, PASSWORD, BUCKET_NAME]):
     raise ValueError("Не удалось загрузить переменные из .env")
@@ -62,14 +56,6 @@ class CouchbaseDB:
             except CouchbaseException as e:
                 if "already exists" not in str(e):
                     print(f"Ошибка создания индекса {index['name']}: {e}") 
-
-    def check_index_exists(self):
-        check_query = f"""
-        SELECT * FROM system:indexes 
-        WHERE name = 'idx_username' AND keyspace_id = '{self.bucket.name}'
-        """
-        result = self.cluster.query(check_query)
-        return len(result.rows()) > 0
 
     def create_document(self, key: str, data: dict):
         # Создание документа в Couchbase
@@ -154,3 +140,4 @@ class CouchbaseDB:
 
 # Подключение к базе данных
 db = CouchbaseDB()
+
