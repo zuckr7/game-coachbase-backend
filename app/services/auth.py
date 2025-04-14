@@ -1,13 +1,13 @@
 import os
 import requests
 from datetime import datetime
-from db import db
+from db import db_users
 from services.user import generate_user_id, create_user_in_db
 from security import create_access_token
 from fastapi import HTTPException, status
 
 def authenticate_user(username: str, password: str, verify_fn) -> dict:
-    user = db.get_user_by_username(username)
+    user = db_users.get_user_by_username(username)
     if not user or not verify_fn(password, user.get("password_hash", "")):
         return None
     return user
@@ -51,18 +51,17 @@ def vk_authenticate(vk_code: str):
     
     vk_user = user_info["response"][0]
     username = f"vk_{vk_user.get('id')}"
-    email = f"{username}@vk.com"
-    existing_user = db.get_user_by_vk_id(str(vk_user.get("id")))
+    existing_user = db_users.get_user_by_vk_id(str(vk_user.get("id")))
     if not existing_user:
         user_id = generate_user_id()
         new_user = {
             "user_id": user_id,
             "username": username,
-            "email": email,
             "created_at": datetime.now().isoformat(),
             "version": 1,
             "progress": {
                 "passedLevel": 0,
+                "points": 0,
                 "items": [
                     {"name": "shield", "amount": 1},
                     {"name": "booster", "amount": 1}

@@ -6,7 +6,9 @@ load_dotenv()
 DB_HOST = os.getenv("DB_HOST")
 USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")
+
 BUCKET_NAME = os.getenv("BUCKET_NAME")
+LEVELS_BUCKET = os.getenv("LEVELS_BUCKET")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models.schemas import UserProgressUpdate
-from db import db
+from db import db_users
 from security import get_current_user
 
 router = APIRouter(prefix="/users", tags=["progress"])
@@ -10,7 +10,7 @@ def update_progress(user_id: str, progress_update: UserProgressUpdate, current_u
     if user_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Access forbidden")
     
-    user = db.get_document(user_id)
+    user = db_users.get_document(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -18,6 +18,10 @@ def update_progress(user_id: str, progress_update: UserProgressUpdate, current_u
 
     if progress_update.passedLevel is not None:
         user["progress"]["passedLevel"] = progress_update.passedLevel
+
+    if progress_update.points is not None:
+        current_points = user["progress"].get("points", 0)
+        user["progress"]["points"] = current_points + progress_update.points
 
     if progress_update.items is not None:
         current_items = {
@@ -34,7 +38,7 @@ def update_progress(user_id: str, progress_update: UserProgressUpdate, current_u
         updated_items = [{"name": name, "amount": amt} for name, amt in current_items.items() if amt != 0]
         user["progress"]["items"] = updated_items
 
-    if not db.create_document(user_id, user):
+    if not db_users.create_document(user_id, user):
         raise HTTPException(status_code=500, detail="Failed to update progress")
     
     return {
@@ -49,7 +53,7 @@ def update_progress(user_id: str, progress_update: UserProgressUpdate, current_u
 def get_progress(user_id: str, current_user: dict = Depends(get_current_user)):
     if user_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Access forbidden")
-    user = db.get_document(user_id)
+    user = db_users.get_document(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user["progress"]

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from models.schemas import UserCreate, UserResponse
-from services.user import prepare_new_user, create_user_in_db, get_user_by_id, delete_user, get_user_by_username
+from services.user import prepare_new_user, create_user_in_db, get_user_by_id, delete_user, get_user_by_username,get_all_users, get_leaderboard_from_db
 from security import get_current_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -16,10 +16,23 @@ def create_user(user: UserCreate):
     return {
         "user_id": new_user["user_id"],
         "username": new_user["username"],
-        "email": new_user["email"],
         "created_at": new_user["created_at"],
         "version": new_user["version"]
     }
+
+@router.get("/", response_model=list[UserResponse])
+def get_all_users_endpoint(current_user: dict = Depends(get_current_user)):
+    users = get_all_users()
+    if users is None:
+        raise HTTPException(status_code=500, detail="Failed to retrieve users")
+    return users
+
+@router.get("/leaderboard", response_model=list[UserResponse])
+def leaderboard():
+    leaderboard_data = get_leaderboard_from_db()
+    if leaderboard_data is None:
+        raise HTTPException(status_code=500, detail="Failed to retrieve leaderboard")
+    return leaderboard_data
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
@@ -31,7 +44,6 @@ def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
     return {
         "user_id": user_id,
         "username": user["username"],
-        "email": user["email"],
         "created_at": user["created_at"],
         "version": user["version"]
     }

@@ -4,7 +4,8 @@ from couchbase.options import ClusterOptions
 from couchbase.auth import PasswordAuthenticator
 from couchbase.exceptions import CouchbaseException, DocumentNotFoundException
 from typing import Optional
-from config import DB_HOST, USERNAME, PASSWORD, BUCKET_NAME
+import datetime
+from config import DB_HOST, USERNAME, PASSWORD, BUCKET_NAME, LEVELS_BUCKET
 
 
 if not all([DB_HOST, USERNAME, PASSWORD, BUCKET_NAME]):
@@ -12,10 +13,12 @@ if not all([DB_HOST, USERNAME, PASSWORD, BUCKET_NAME]):
 
 # CouchbaseDB
 class CouchbaseDB:
-    def __init__(self):
+    def __init__(self, bucket_name: str, create_indexes: bool = True):
+        self.bucket_name = bucket_name
         self.cluster = None
         self.bucket = None
         self.collection = None
+        self.create_indexes_flag = create_indexes
         self.connect()
 
     def connect(self):
@@ -30,10 +33,11 @@ class CouchbaseDB:
             )
             
             # Подключение к бакету и коллекции
-            self.bucket = self.cluster.bucket(os.getenv('BUCKET_NAME'))
+            self.bucket = self.cluster.bucket(self.bucket_name)
             self.collection = self.bucket.default_collection()
-            self.create_indexes()
-            print("Успешное подключение к Couchbase!")
+            if self.create_indexes_flag:
+                self.create_indexes()
+            print(f"Успешное подключение к бакету: {self.bucket.name}")
         except CouchbaseException as e:
             print(f"Ошибка подключения к Couchbase: {e}")
 
@@ -94,6 +98,21 @@ class CouchbaseDB:
         except CouchbaseException as e:
             print(f"Ошибка при удалении документа: {e}")
             return False
+    
+    def get_all_documents(self) -> list:
+        query = f"SELECT META().id, * FROM `{self.bucket.name}`"
+        try:
+            result = self.cluster.query(query)
+            rows = list(result.rows())
+            documents = []
+            for row in rows:
+                doc = row[self.bucket.name]
+                doc["id"] = row["id"]
+                documents.append(doc)
+            return documents
+        except Exception as e:
+            print(f"Ошибка получения документов: {e}")
+            return []
         
     def get_user_by_username(self, username: str) -> Optional[dict]:
         query = f"""
@@ -137,7 +156,26 @@ class CouchbaseDB:
         except CouchbaseException as e:
             print(f"Ошибка поиска пользователя по vk_id: {e}")
             return None
+        
+    def get_leaderboard(self, limit: int = 10):
+        query = f"""
+        SELECT META().id as user_id,
+            username,
+            created_at,
+            version
+        FROM `{self.bucket.name}`
+        WHERE progress.points IS NOT MISSING
+        ORDER BY progress.points DESC
+        LIMIT {limit}
+        """
+        try:
+            result = self.cluster.query(query)
+            return [row for row in result.rows()]
+        except Exception as e:
+            print(f"Ошибка получения leaderboard: {e}")
+            return None
 
 # Подключение к базе данных
-db = CouchbaseDB()
+db_users = CouchbaseDB(BUCKET_NAME, create_indexes=True)      # для пользователей
+db_levels = CouchbaseDB(LEVELS_BUCKET, create_indexes=False)     # для уровней
 

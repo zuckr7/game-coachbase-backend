@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
-from routers import users, auth, progress
+from routers import users, auth, progress, levels
 
 app = FastAPI(title="My Project API")
 
@@ -8,6 +8,7 @@ app = FastAPI(title="My Project API")
 app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(progress.router)
+app.include_router(levels.router)
 
 @app.get("/")
 def root():
