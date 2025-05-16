@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Any
 from datetime import datetime
 
@@ -13,6 +13,7 @@ class UserCreate(BaseModel):
 class UserProgressUpdate(BaseModel):
     passedLevel: Optional[int] = None
     points: Optional[int] = 0
+    coins: Optional[int] = 0 
     items: Optional[list[dict]] = None
 
 class UserResponse(BaseModel):

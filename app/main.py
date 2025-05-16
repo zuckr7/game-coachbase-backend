@@ -1,14 +1,15 @@
 from fastapi import FastAPI
 import uvicorn
-from routers import users, auth, progress, levels
+from routers import users, auth, progress, levels, purchase
 
-app = FastAPI(title="My Project API")
+app = FastAPI(title="Hamster Invasion")
 
 # Подключаем роутеры
 app.include_router(users.router)
 app.include_router(auth.router)
 app.include_router(progress.router)
 app.include_router(levels.router)
+app.include_router(purchase.router)
 
 @app.get("/")
 def root():

@@ -32,6 +32,7 @@ def prepare_new_user(data: dict) -> dict:
         "progress": {
             "passedLevel": 0,
             "points": 0,
+            "coins": 100,
             "items": [
                 {"name": "shield", "amount": 1},
                 {"name": "booster", "amount": 1}

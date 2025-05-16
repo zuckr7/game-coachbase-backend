@@ -14,7 +14,7 @@ def update_progress(user_id: str, progress_update: UserProgressUpdate, current_u
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    user["version"] += 1
+    user["version"] = user.get("version", 1) + 1
 
     if progress_update.passedLevel is not None:
         user["progress"]["passedLevel"] = progress_update.passedLevel
@@ -22,6 +22,10 @@ def update_progress(user_id: str, progress_update: UserProgressUpdate, current_u
     if progress_update.points is not None:
         current_points = user["progress"].get("points", 0)
         user["progress"]["points"] = current_points + progress_update.points
+
+    if progress_update.coins is not None:
+        current_coins = user["progress"].get("coins", 0)
+        user["progress"]["coins"] = current_coins + progress_update.coins
 
     if progress_update.items is not None:
         current_items = {
