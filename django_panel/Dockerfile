@@ -13,7 +13,5 @@ COPY ./django_panel/ .
 
 COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["gunicorn", "django_panel.wsgi:application", "--bind", "0.0.0.0:8001"]

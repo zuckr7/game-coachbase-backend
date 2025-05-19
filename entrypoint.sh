@@ -18,5 +18,10 @@ fi
 # Применяем миграции
 python manage.py migrate --noinput
 
+python manage.py collectstatic --noinput
+
 # Запускаем Gunicorn
-exec gunicorn django_panel.wsgi:application --bind 0.0.0.0:8001
+exec gunicorn django_panel.wsgi:application \
+  --bind 0.0.0.0:8001 \
+  --timeout 120 \
+  --workers 2

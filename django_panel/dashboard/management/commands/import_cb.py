@@ -7,6 +7,11 @@ class Command(BaseCommand):
     help = "Import all documents from Couchbase into local SQLite tables"
 
     def handle(self, *args, **options):
+        LevelDoc.objects.all().delete()
+        UserProgressDoc.objects.all().delete()
+        UserDoc.objects.all().delete()
+        self.stdout.write("All local records deleted, starting fresh import…")
+        
         # ——— Импорт уровней ———
         query_levels = f"SELECT l.* FROM `{CB.levels_bucket.name}` AS l"
         rows = CB.cluster.query(query_levels)
