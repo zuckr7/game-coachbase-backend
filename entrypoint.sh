@@ -1,16 +1,18 @@
 #!/bin/sh
 
 # Ждём, пока Couchbase UI станет доступным
-echo "⏳ Waiting for Couchbase to be ready..."
-until curl -s http://couchbase:8091/pools > /dev/null; do
-  echo "  Couchbase is still unavailable - sleeping"
+echo "⏳ Waiting for Couchbase cluster init..."
+until curl -s -u "$USERNAME:$PASSWORD" http://couchbase:8091/pools/default | grep -q '"clusterName"'; do
+  echo "  Cluster not ready - sleeping"
   sleep 5
 done
-echo "✅ Couchbase is up!"
+echo "✅ Couchbase cluster ready!"
 
 # Если внутри контейнера есть .env-файл, экспортируем переменные
 if [ -f /django_panel/.env ]; then
-  export $(grep -v '^#' /django_panel/.env | xargs)
+  set -a
+    . /django_panel/.env
+  set +a
 fi
 
 # Применяем миграции

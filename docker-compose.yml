@@ -1,9 +1,11 @@
 services:
   couchbase:
-    image: couchbase:community-7.1.1
+    build: ./couchbase
+    container_name: couchbase-1
     ports:
       - "8091:8091"
       - "8092:8092"
+      - "8093:8093"
       - "11210:11210"
     env_file:
       - .env
@@ -29,6 +31,11 @@ services:
       - .env
     depends_on:
       - couchbase
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   django:
     build:
@@ -41,6 +48,11 @@ services:
       - .env
     depends_on:
       - couchbase
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   cb_data:
