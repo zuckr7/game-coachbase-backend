@@ -2,7 +2,7 @@
 
 # Ждём, пока Couchbase UI станет доступным
 echo "⏳ Waiting for Couchbase cluster init..."
-until curl -s -u "$USERNAME:$PASSWORD" http://couchbase:8091/pools/default | grep -q '"clusterName"'; do
+until curl -s -u "$COUCHBASE_ADMINISTRATOR_USERNAME:$COUCHBASE_ADMINISTRATOR_PASSWORD" http://couchbase:8091/pools/default | grep -q '"clusterName"'; do
   echo "  Cluster not ready - sleeping"
   sleep 5
 done
