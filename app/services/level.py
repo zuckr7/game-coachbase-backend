@@ -1,5 +1,5 @@
 import uuid
-from db import db_levels
+from app.db import db_levels
 
 def generate_level_id() -> str:
     return str(uuid.uuid4())

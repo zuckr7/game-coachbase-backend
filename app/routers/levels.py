@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from models.schemas import Level, LevelCreate
-from services import level as level_service
+from app.models.schemas import Level, LevelCreate
+from app.services import level as level_service
 from typing import List
 
 router = APIRouter(prefix="/levels",tags=["Levels"])

@@ -5,7 +5,7 @@ from couchbase.auth import PasswordAuthenticator
 from couchbase.exceptions import CouchbaseException, DocumentNotFoundException
 from typing import Optional
 import datetime
-from config import DB_HOST, USERNAME, PASSWORD, BUCKET_NAME, LEVELS_BUCKET
+from app.config import DB_HOST, USERNAME, PASSWORD, BUCKET_NAME, LEVELS_BUCKET
 
 
 if not all([DB_HOST, USERNAME, PASSWORD, BUCKET_NAME]):
@@ -178,4 +178,3 @@ class CouchbaseDB:
 # Подключение к базе данных
 db_users = CouchbaseDB(BUCKET_NAME, create_indexes=True)      # для пользователей
 db_levels = CouchbaseDB(LEVELS_BUCKET, create_indexes=False)     # для уровней
-

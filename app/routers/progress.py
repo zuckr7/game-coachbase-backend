@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models.schemas import UserProgressUpdate
-from db import db_users
-from security import get_current_user
+from app.models.schemas import UserProgressUpdate
+from app.db import db_users
+from app.auth_utils import get_current_user
 
 router = APIRouter(prefix="/users", tags=["progress"])
 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
-from routers import users, auth, progress, levels, purchase
+from app.routers import users, auth, progress, levels, purchase
 
 app = FastAPI(title="Hamster Invasion")
 

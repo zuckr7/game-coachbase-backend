@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from security import get_current_user
-from db import db_users
-from models.schemas import UserProgressUpdate
+from app.auth_utils import get_current_user
+from app.db import db_users
+from app.models.schemas import UserProgressUpdate
 
 router = APIRouter(prefix="/users", tags=["purchases"])
 

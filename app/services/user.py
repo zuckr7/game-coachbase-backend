@@ -1,6 +1,6 @@
 import uuid
-from db import db_users
-from security import hash_password
+from app.db import db_users
+from app.auth_utils import hash_password
 from datetime import datetime
 
 def generate_user_id() -> str:

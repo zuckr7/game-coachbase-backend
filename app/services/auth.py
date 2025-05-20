@@ -1,9 +1,9 @@
 import os
 import requests
 from datetime import datetime
-from db import db_users
-from services.user import generate_user_id, create_user_in_db
-from security import create_access_token
+from app.db import db_users
+from app.services.user import generate_user_id, create_user_in_db
+from app.auth_utils import create_access_token
 from fastapi import HTTPException, status
 
 def authenticate_user(username: str, password: str, verify_fn) -> dict:
