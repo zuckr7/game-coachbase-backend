@@ -11,7 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
+load_dotenv(Path(__file__).parent.parent / ".env")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,10 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-hiamge9dg41rzkn9gvb5l@l+1p_&(er^++@$we1#zgaq_g#@i1'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['185.53.46.209', 'localhost', '127.0.0.1']
 
@@ -126,11 +130,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-load_dotenv(Path(__file__).parent.parent / ".env")
 
 DB_HOST        = os.getenv("DB_HOST")
 USERNAME       = os.getenv("USERNAME")

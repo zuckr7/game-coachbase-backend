@@ -13,7 +13,7 @@ services:
       - COUCHBASE_ADMINISTRATOR_USERNAME
       - COUCHBASE_ADMINISTRATOR_PASSWORD
     healthcheck:
-      test: ["CMD", "curl", "-u", "${USERNAME}:${PASSWORD}", "-f", "http://localhost:8091/pools/default"]
+      test: ["CMD", "curl", "-u", "${COUCHBASE_ADMINISTRATOR_USERNAME}:${COUCHBASE_ADMINISTRATOR_PASSWORD}", "-f", "http://localhost:8091/pools/default"]
       interval: 10s
       timeout: 5s
       retries: 10

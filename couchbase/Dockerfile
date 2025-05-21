@@ -7,4 +7,4 @@ RUN apt-get update && \
 COPY init-couchbase.sh /init-couchbase.sh
 RUN chmod +x /init-couchbase.sh
 
-ENTRYPOINT ["/init-couchbase.sh"]
+CMD ["/init-couchbase.sh"]
