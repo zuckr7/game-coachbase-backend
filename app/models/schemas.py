@@ -32,3 +32,8 @@ class Level(LevelCreate):
     name: str
     difficulty: str
     data: dict[str, Any]
+
+class PurchaseItem(BaseModel):
+    name: str = Field(..., title="Item Name")
+    quantity: int = Field(..., gt=0, title="Quantity")
+    price: Optional[float] = Field(None, title="Price (optional)")

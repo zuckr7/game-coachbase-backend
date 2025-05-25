@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.models.schemas import Level, LevelCreate
 from app.services import level as level_service
+from app.auth_utils import check_ip
 from typing import List
 
 router = APIRouter(prefix="/levels",tags=["Levels"])
@@ -12,7 +13,7 @@ def get_level(level_id: str):
         raise HTTPException(status_code=404, detail="Level not found")
     return level_data
 
-@router.post("/", response_model=Level)
+@router.post("/", response_model=Level, dependencies=[Depends(check_ip)])
 def create_level(level: LevelCreate):
     level_dict = level_service.prepare_new_level(level.model_dump())
     created = level_service.create_level_in_db(level_dict)
@@ -20,7 +21,7 @@ def create_level(level: LevelCreate):
         raise HTTPException(status_code=500, detail="Error saving level to database")
     return level_dict
 
-@router.delete("/{level_id}")
+@router.delete("/{level_id}", dependencies=[Depends(check_ip)])
 def delete_level(level_id: str):
     deleted = level_service.delete_level(level_id)
     if not deleted:
